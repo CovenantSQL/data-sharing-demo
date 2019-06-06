@@ -24,7 +24,6 @@
 
                 </v-flex>
 
-
                 <v-card-text>
                   <v-container grid-list-md>
                     <v-layout wrap>
@@ -83,6 +82,11 @@
                     </v-layout>
                   </v-container>
                 </v-card-text>
+                <template>
+                  <div id="dropUpload">
+                    <vue-dropzone id="drop1" :options="dropOptions"></vue-dropzone>
+                  </div>
+                </template>
 
                 <v-card-actions>
                   <v-spacer></v-spacer>
@@ -95,38 +99,47 @@
           <v-data-table
               :headers="headers"
               :items="items"
-              class="elevation-1"
+              :expand="expand"
+              :rows-per-page-items="rowsPerPage"
+              class="crud"
           >
             <v-progress-linear v-slot:progress color="blue" indeterminate></v-progress-linear>
             <template slot="items" slot-scope="props">
-              <td>{{ props.item.id }}</td>
-              <td class="text-xs-left">{{ props.item.serial }}</td>
-              <td class="text-xs-left">{{ props.item.factory }}</td>
-              <td class="text-xs-left">{{ props.item.date }}</td>
-              <td class="text-xs-left">{{ props.item.batch }}</td>
-              <td class="text-xs-left">{{ props.item.carrier }}</td>
-              <td class="text-xs-left">{{ props.item.cold_van }}</td>
-              <td class="text-xs-left">{{ props.item.distributor }}</td>
-              <td class="text-xs-left">{{ props.item.hospital }}</td>
-              <td class="text-xs-left">{{ props.item.patient }}</td>
-              <td class="justify-center layout px-0">
-                <v-icon
-                    small
-                    class="mr-2"
-                    @click="editItem(props.item)"
-                >
-                  edit
-                </v-icon>
-                <v-icon
-                    small
-                    @click="deleteItem(props.item)"
-                >
-                  delete
-                </v-icon>
-              </td>
+              <tr @click="props.expanded = !props.expanded">
+                <td>{{ props.item.id }}</td>
+                <td class="text-xs-left">{{ props.item.serial }}</td>
+                <td class="text-xs-left">{{ props.item.factory }}</td>
+                <td class="text-xs-left">{{ props.item.date }}</td>
+                <td class="text-xs-left">{{ props.item.batch }}</td>
+                <td class="text-xs-left">{{ props.item.carrier }}</td>
+                <td class="text-xs-left">{{ props.item.cold_van }}</td>
+                <td class="text-xs-left">{{ props.item.distributor }}</td>
+                <td class="text-xs-left">{{ props.item.hospital }}</td>
+                <td class="text-xs-left">{{ props.item.patient }}</td>
+                <td class="justify-center layout px-0">
+                  <v-icon
+                      small
+                      class="mr-2"
+                      @click="editItem(props.item)"
+                  >
+                    edit
+                  </v-icon>
+                  <v-icon
+                      small
+                      @click="deleteItem(props.item)"
+                  >
+                    delete
+                  </v-icon>
+                </td>
+              </tr>
+            </template>
+            <template v-slot:expand="props">
+              <v-card flat>
+                <v-card-text>Peek-a-boo!</v-card-text>
+              </v-card>
             </template>
             <template v-slot:no-data>
-              <v-btn color="primary" @click="initialize">Reset</v-btn>
+              <v-btn color="primary" @click="initialize">Reload</v-btn>
             </template>
           </v-data-table>
         </div>
@@ -137,9 +150,22 @@
 
 <script>
   import axios from 'axios';
+  import vueDropzone from "vue2-dropzone";
 
   export default {
     data: () => ({
+      dropOptions: {
+        url: "/apiv1/upload",
+        maxFilesize: 20, // MB
+        maxFiles: 4,
+        chunking: false,
+        chunkSize: 500, // Bytes
+        thumbnailWidth: 150, // px
+        thumbnailHeight: 150,
+        addRemoveLinks: true
+      },
+      expand: false,
+      rowsPerPage: [20,50,100,{"text":"$vuetify.dataIterator.rowsPerPageAll","value":-1}],
       menu: '',
       date: '',
       picker: '',
@@ -183,6 +209,10 @@
       }
     }),
 
+    components: {
+      vueDropzone
+    },
+
     computed: {
       formTitle() {
         return this.editedIndex === -1 ? 'New Item' : 'Edit Item'
@@ -220,7 +250,7 @@
               group: 'crud',
               type: 'error',
               title: "Get cargo failed",
-              text: err.toString(),
+              text: err.response.data,
             });
             this.$log.error(err);
           });
@@ -235,7 +265,22 @@
 
       deleteItem(item) {
         const index = this.items.indexOf(item);
-        confirm('Are you sure you want to delete this item?') && this.items.splice(index, 1);
+        const id = item.id;
+        confirm('Are you sure you want to delete this item?') &&
+        axios.delete('/apiv1/cargo/' + id)
+          .then(resp => {
+            this.$log.debug(resp)
+            this.items.splice(index, 1);
+          })
+          .catch(err => {
+            this.$notify({
+              group: 'crud',
+              type: 'error',
+              title: "Del cargo failed",
+              text: err.response.data,
+            });
+            this.$log.error(err)
+          });
       },
 
       close() {
@@ -261,21 +306,43 @@
             axios.put('/apiv1/cargo', diff)
               .then(resp => {
                 this.$log.debug(resp)
+                Object.assign(this.items[this.editedIndex], this.editedItem)
               })
               .catch(err => {
                 this.$notify({
                   group: 'crud',
                   type: 'error',
                   title: "Modify cargo failed",
-                  text: err.toString(),
+                  text: err.response.data,
                 });
                 this.$log.error(err)
               });
           }
-
-          Object.assign(this.items[this.editedIndex], this.editedItem)
         } else {
-          this.items.push(this.editedItem)
+          let insert = {};
+          for (let key in this.editedItem) {
+            if (key in this.defaultItem &&
+              this.editedItem[key] !== this.defaultItem[key]) {
+              insert[key] = this.editedItem[key];
+            }
+          }
+          if (Object.keys(insert).length > 0) {
+            this.$log.debug(insert)
+            axios.post('/apiv1/cargo', insert)
+              .then(resp => {
+                this.$log.debug(resp)
+                this.items.push(this.editedItem)
+              })
+              .catch(err => {
+                this.$notify({
+                  group: 'crud',
+                  type: 'error',
+                  title: "Create cargo failed",
+                  text: err.response.data,
+                });
+                this.$log.error(err)
+              });
+          }
         }
         this.close()
       }
