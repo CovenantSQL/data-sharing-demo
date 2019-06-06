@@ -6,6 +6,7 @@ import router from './router'
 import store from './store'
 import VueLogger from 'vuejs-logger';
 import Notifications from 'vue-notification'
+import 'vue2-dropzone/dist/vue2Dropzone.min.css'
 
 const isProduction = process.env.NODE_ENV === 'production';
 

@@ -1,4 +1,4 @@
-package model
+package api
 
 import (
 	"crypto/sha256"
@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
-	"strconv"
 	"sync"
 
 	"github.com/Sirupsen/logrus"
@@ -48,7 +47,7 @@ func Login() echo.HandlerFunc {
 	return func(c echo.Context) (err error) {
 		auth := new(authReq)
 		if err = c.Bind(auth); err != nil {
-			logrus.Errorf("Login: bad request, %s", err)
+			logrus.Errorf("Login: bad request, %v", err)
 			return c.JSON(http.StatusBadRequest, err)
 		}
 		token := getUserToken(auth.User)
@@ -59,13 +58,13 @@ func Login() echo.HandlerFunc {
 				auth.User, auth.Password, host, db)
 			db, err := sql.Open("mysql", dsn)
 			if err != nil {
-				logrus.Errorf("Login: open db failed, %s", err)
+				logrus.Errorf("Login: open db failed, %v", err)
 				return c.JSON(http.StatusInternalServerError, err)
 			}
 			err = db.Ping()
 			if err != nil {
 				_ = db.Close()
-				logrus.Errorf("Login: ping db failed, %s", err)
+				logrus.Errorf("Login: ping db failed, %v", err)
 				return c.JSON(http.StatusUnauthorized, err)
 			}
 			_, loaded := dbMap.LoadOrStore(token, db)
@@ -88,7 +87,7 @@ func Logout() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		token := c.Request().Header.Get("Authorization")
 		if token == "" {
-			logrus.Errorf("Logout: no token got")
+			logrus.Error("Logout: no token got")
 			return c.JSON(http.StatusBadRequest, nil)
 		} else {
 			dbMap.Delete(token)
@@ -101,7 +100,7 @@ func GetCargos() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		token := c.Request().Header.Get("Authorization")
 		if token == "" {
-			logrus.Errorf("GetCargos: no token got")
+			logrus.Error("GetCargos: no token got")
 			return c.JSON(http.StatusBadRequest, nil)
 		} else {
 			return c.JSON(http.StatusOK, getCargos(token))
@@ -109,29 +108,11 @@ func GetCargos() echo.HandlerFunc {
 	}
 }
 
-func PostCargo(db *sql.DB) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		var cargo Cargo
-		_ = c.Bind(&cargo)
-
-		id, err := postCargo(db, cargo)
-
-		if err == nil {
-			return c.JSON(http.StatusCreated, H{
-				"created": id,
-			})
-		} else {
-			return err
-		}
-
-	}
-}
-
 func PutCargo() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		token := c.Request().Header.Get("Authorization")
 		if token == "" {
-			logrus.Errorf("PutCargos: no token got")
+			logrus.Error("PutCargos: no token got")
 			return c.JSON(http.StatusBadRequest, nil)
 		} else {
 			if id, err := putCargo(c, token); err == nil {
@@ -139,26 +120,44 @@ func PutCargo() echo.HandlerFunc {
 					"updated": id,
 				})
 			} else {
-				return err
+				return c.JSON(http.StatusForbidden, err)
 			}
-
 		}
-
 	}
 }
 
-func DeleteCargo(db *sql.DB) echo.HandlerFunc {
+func PostCargo() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		id, _ := strconv.Atoi(c.Param("id"))
-		_, err := deleteCargo(db, id)
-
-		if err == nil {
-			return c.JSON(http.StatusOK, H{
-				"deleted": id,
-			})
+		token := c.Request().Header.Get("Authorization")
+		if token == "" {
+			logrus.Error("PutCargos: no token got")
+			return c.JSON(http.StatusBadRequest, nil)
 		} else {
-			return err
+			if id, err := postCargo(c, token); err == nil {
+				return c.JSON(http.StatusCreated, H{
+					"created": id,
+				})
+			} else {
+				return c.JSON(http.StatusForbidden, err)
+			}
 		}
+	}
+}
 
+func DeleteCargo() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		token := c.Request().Header.Get("Authorization")
+		if token == "" {
+			logrus.Error("deleteCargo: no token got")
+			return c.JSON(http.StatusBadRequest, nil)
+		} else {
+			if id, err := deleteCargo(c, token); err == nil {
+				return c.JSON(http.StatusOK, H{
+					"deleted": id,
+				})
+			} else {
+				return c.JSON(http.StatusForbidden, err)
+			}
+		}
 	}
 }

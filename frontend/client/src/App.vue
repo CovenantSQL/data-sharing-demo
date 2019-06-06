@@ -23,6 +23,7 @@
     name: 'App',
     computed: {
       isLoggedIn: function () {
+        this.initialize();
         return this.$store.getters.isLoggedIn
       },
     },
@@ -36,6 +37,7 @@
       },
 
       logout: function () {
+        this.user = "";
         this.$store.dispatch('logout')
           .then(() => {
             this.$router.push('/login')
