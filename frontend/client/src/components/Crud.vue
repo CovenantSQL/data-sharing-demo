@@ -79,15 +79,23 @@
                       <v-flex xs12 sm6 md4>
                         <v-text-field v-model="editedItem.patient" label="Patient"></v-text-field>
                       </v-flex>
+                      <v-flex xs12 sm6 md4>
+                        <v-text-field disabled v-model="editedItem.attach_uri" label="Attach"></v-text-field>
+                      </v-flex>
+                      <v-flex xs12 sm6 md8>
+                        <v-text-field disabled v-model="editedItem.attach_sum" label="CheckSum"></v-text-field>
+                      </v-flex>
                     </v-layout>
                   </v-container>
                 </v-card-text>
                 <template>
                   <div id="dropUpload">
-                    <vue-dropzone id="drop1" :options="dropOptions"></vue-dropzone>
+                    <vue-dropzone id="uploadField" ref="myVueDropzone"
+                                  @vdropzone-success="UploadSuccess"
+                                  :options="dropOptions">
+                    </vue-dropzone>
                   </div>
                 </template>
-
                 <v-card-actions>
                   <v-spacer></v-spacer>
                   <v-btn color="blue darken-1" flat @click="close">Cancel</v-btn>
@@ -116,6 +124,9 @@
                 <td class="text-xs-left">{{ props.item.distributor }}</td>
                 <td class="text-xs-left">{{ props.item.hospital }}</td>
                 <td class="text-xs-left">{{ props.item.patient }}</td>
+                <td class="justify-center px-0">
+                  <span v-if="props.item.attach_uri"><v-icon small>attach_file</v-icon></span>
+                </td>
                 <td class="justify-center layout px-0">
                   <v-icon
                       small
@@ -155,17 +166,20 @@
   export default {
     data: () => ({
       dropOptions: {
-        url: "/apiv1/upload",
+        url: "/apiv1/attach",
         maxFilesize: 20, // MB
-        maxFiles: 4,
+        maxFiles: 1,
         chunking: false,
         chunkSize: 500, // Bytes
-        thumbnailWidth: 150, // px
-        thumbnailHeight: 150,
-        addRemoveLinks: true
+        thumbnailWidth: 100, // px
+        thumbnailHeight: 100,
+        addRemoveLinks: true,
+        headers: {"Authorization": localStorage.getItem('token')}
       },
+      haveAttach: false,
+      isMounted: false,
       expand: false,
-      rowsPerPage: [20,50,100,{"text":"$vuetify.dataIterator.rowsPerPageAll","value":-1}],
+      rowsPerPage: [20, 50, 100, {"text": "$vuetify.dataIterator.rowsPerPageAll", "value": -1}],
       menu: '',
       date: '',
       picker: '',
@@ -195,6 +209,8 @@
         distributor: '',
         hospital: '',
         patient: '',
+        attach_uri: '',
+        attach_sum: '',
       },
       defaultItem: {
         serial: '',
@@ -206,6 +222,8 @@
         distributor: '',
         hospital: '',
         patient: '',
+        attach_uri: '',
+        attach_sum: '',
       }
     }),
 
@@ -230,9 +248,22 @@
     },
 
     methods: {
+      UploadZoneMount() {
+        let file = {size: 0, name: this.editedItem.attach_uri};
+        let url = "http://localhost:8081/apiv1/attach/" + this.editedItem.attach_uri;
+        this.$log.debug(file, url)
+        this.$refs.myVueDropzone.manuallyAddFile(file, url)
+        this.isMounted = true;
+      },
+      UploadSuccess(file, response) {
+        this.success = true;
+        this.$log.debug(response);
+        this.editedItem.attach_uri = response.attach_uri;
+        this.editedItem.attach_sum = response.attach_sum;
+      },
       initialize() {
         axios.defaults.headers.common['Authorization'] = localStorage.getItem('token');
-        axios.get('/apiv1/cargos')
+        axios.get('/apiv1/cargo')
           .then(resp => {
             this.items = resp.data;
             if (resp.data == null) {
@@ -257,10 +288,12 @@
       },
 
       editItem(item) {
+        axios.defaults.headers.common['Authorization'] = localStorage.getItem('token');
         this.editedIndex = this.items.indexOf(item);
         this.editedItem = Object.assign({}, item);
         this.$log.debug("edit: ", this.editedIndex, item);
         this.dialog = true;
+        this.UploadZoneMount();
       },
 
       deleteItem(item) {
@@ -287,6 +320,7 @@
         this.dialog = false;
         setTimeout(() => {
           this.editedItem = Object.assign({}, this.defaultItem);
+          this.$refs.myVueDropzone.removeAllFiles();
           this.editedIndex = -1;
         }, 300)
       },
@@ -302,11 +336,12 @@
           }
           if (Object.keys(diff).length > 0) {
             diff['id'] = this.editedItem.id;
-            this.$log.debug(diff)
+            this.$log.debug(diff);
             axios.put('/apiv1/cargo', diff)
               .then(resp => {
-                this.$log.debug(resp)
-                Object.assign(this.items[this.editedIndex], this.editedItem)
+                this.$log.debug(resp);
+                Object.assign(this.items[this.editedIndex], this.editedItem);
+                this.$refs.myVueDropzone.removeAllFiles();
               })
               .catch(err => {
                 this.$notify({

@@ -13,7 +13,7 @@ import (
 )
 
 type Cargo struct {
-	ID          *int64  `json:"id"`
+	Id          *int64  `json:"id"`
 	Serial      *string `json:"serial"`
 	Factory     *string `json:"factory"`
 	Date        *string `json:"date"`
@@ -23,10 +23,12 @@ type Cargo struct {
 	Distributor *string `json:"distributor"`
 	Hospital    *string `json:"hospital"`
 	Patient     *string `json:"patient"`
+	AttachUri   *string `json:"attach_uri"`
+	AttachSum   *string `json:"attach_sum"`
 }
 
 const (
-	migrate = `
+	CargoMigrate = `
 		CREATE TABLE cargos (
 			id INTEGER PRIMARY KEY,
 			serial VARCHAR,
@@ -37,7 +39,9 @@ const (
 			cold_van VARCHAR,
 			distributor VARCHAR,
 			hospital VARCHAR,
-			patient VARCHAR
+			patient VARCHAR,
+			attach_uri VARCHAR,
+			attach_sum VARCHAR
 		);
 	`
 )
@@ -51,30 +55,51 @@ func getDB(token string) *sql.DB {
 	return dbIns.(*sql.DB)
 }
 
+func getUser(token string) (user string) {
+	switch token {
+	case getUserToken("admin"):
+		user = "admin"
+	case getUserToken("factory"):
+		user = "factory"
+	case getUserToken("carrier"):
+		user = "carrier"
+	case getUserToken("hospital"):
+		user = "hospital"
+	case getUserToken("readonly"):
+		user = "readonly"
+	default:
+		user = "unknown"
+		logrus.Errorf("unknown token: %s", token)
+	}
+	return
+}
+
 func getCargos(token string) (result []Cargo) {
 	var sql string
 	var user string
 	switch token {
-	case getUserToken("user1"):
-		sql = "SELECT * FROM cargos;"
-		user = "user1"
-	case getUserToken("user2"):
-		sql = "SELECT id, serial, factory, date, batch FROM cargos;"
-		user = "user2"
-	case getUserToken("user3"):
-		sql = "SELECT * FROM cargos;"
-		user = "user3"
+	case getUserToken("admin"):
+		sql = "SELECT * FROM cargos"
+	case getUserToken("factory"):
+		sql = "SELECT id, serial, factory, date, batch FROM cargos"
+	case getUserToken("carrier"):
+		sql = "SELECT id, serial, factory, date, batch, carrier, cold_van, distributor FROM cargos"
+	case getUserToken("hospital"):
+		sql = "SELECT id, serial, factory, date, batch, distributor, hospital, patient, attach_uri, attach_sum FROM cargos"
+	case getUserToken("readonly"):
+		sql = "SELECT * FROM cargos"
 	default:
 		logrus.Debugf("unknown token: %s", token)
 		return
 	}
 
+	user = getUser(token)
 	db := getDB(token)
 	if db == nil {
 		return
 	}
+	sql = sql + " LIMIT 100;"
 	cargos, err := db.Query(sql)
-
 	if err != nil {
 		logrus.Errorf("getCargos: %v", err)
 		return
@@ -86,14 +111,22 @@ func getCargos(token string) (result []Cargo) {
 	for cargos.Next() {
 		cargo := Cargo{}
 		switch user {
-		case "user1":
-			err = cargos.Scan(&cargo.ID, &cargo.Serial, &cargo.Factory, &cargo.Date, &cargo.Batch,
-				&cargo.Carrier, &cargo.ColdVan, &cargo.Distributor, &cargo.Hospital, &cargo.Patient)
-		case "user2":
-			err = cargos.Scan(&cargo.ID, &cargo.Serial, &cargo.Factory, &cargo.Date, &cargo.Batch)
-		case "user3":
-			err = cargos.Scan(&cargo.ID, &cargo.Serial, &cargo.Factory, &cargo.Date, &cargo.Batch,
-				&cargo.Carrier, &cargo.ColdVan, &cargo.Distributor, &cargo.Hospital, &cargo.Patient)
+		case "admin":
+			err = cargos.Scan(&cargo.Id, &cargo.Serial, &cargo.Factory, &cargo.Date, &cargo.Batch,
+				&cargo.Carrier, &cargo.ColdVan, &cargo.Distributor, &cargo.Hospital, &cargo.Patient,
+				&cargo.AttachUri, &cargo.AttachSum)
+		case "factory":
+			err = cargos.Scan(&cargo.Id, &cargo.Serial, &cargo.Factory, &cargo.Date, &cargo.Batch)
+		case "carrier":
+			err = cargos.Scan(&cargo.Id, &cargo.Serial, &cargo.Factory, &cargo.Date, &cargo.Batch,
+				&cargo.Carrier, &cargo.ColdVan, &cargo.Distributor)
+		case "hospital":
+			err = cargos.Scan(&cargo.Id, &cargo.Serial, &cargo.Factory, &cargo.Date, &cargo.Batch,
+				&cargo.Distributor, &cargo.Hospital, &cargo.Patient, &cargo.AttachUri, &cargo.AttachSum)
+		case "readonly":
+			err = cargos.Scan(&cargo.Id, &cargo.Serial, &cargo.Factory, &cargo.Date, &cargo.Batch,
+				&cargo.Carrier, &cargo.ColdVan, &cargo.Distributor, &cargo.Hospital, &cargo.Patient,
+				&cargo.AttachUri, &cargo.AttachSum)
 		default:
 			panic("not possible user")
 		}
@@ -162,6 +195,14 @@ func postCargo(c echo.Context, token string) (id int64, err error) {
 		sets += "patient,"
 		args = append(args, *cargo.Patient)
 	}
+	if cargo.AttachUri != nil {
+		sets += "attach_uri,"
+		args = append(args, *cargo.AttachUri)
+	}
+	if cargo.AttachSum != nil {
+		sets += "attach_sum,"
+		args = append(args, *cargo.AttachSum)
+	}
 	if len(args) == 0 {
 		err = errors.New("nothing updated")
 		logrus.Warn("putCargo: nothing updated")
@@ -190,14 +231,16 @@ func postCargo(c echo.Context, token string) (id int64, err error) {
 	}
 
 	defer stmt.Close()
-
+	logrus.Debugf("postCargo: %s %v", sql, args)
 	result, err := stmt.Exec(args...)
 	if err != nil {
 		logrus.Errorf("postCargo: %v", err)
 		return
 	}
+	cId, err := result.LastInsertId()
+	_ = putCargoSql(cId, sql, getUser(token), db)
 
-	return result.LastInsertId()
+	return cId, err
 }
 
 func putCargo(c echo.Context, token string) (id int64, err error) {
@@ -213,7 +256,7 @@ func putCargo(c echo.Context, token string) (id int64, err error) {
 		logrus.Errorf("putCargo: %v", err)
 		return
 	}
-	if cargo.ID == nil {
+	if cargo.Id == nil {
 		err = errors.New("no id got in req")
 		logrus.Error("putCargo: no id got in req")
 		return
@@ -255,6 +298,14 @@ func putCargo(c echo.Context, token string) (id int64, err error) {
 		sets += "patient = ?,"
 		args = append(args, *cargo.Patient)
 	}
+	if cargo.AttachUri != nil {
+		sets += "attach_uri = ?,"
+		args = append(args, *cargo.AttachUri)
+	}
+	if cargo.AttachSum != nil {
+		sets += "attach_sum = ?,"
+		args = append(args, *cargo.AttachSum)
+	}
 	if len(args) == 0 {
 		err = errors.New("nothing updated")
 		logrus.Warn("putCargo: nothing updated")
@@ -264,7 +315,7 @@ func putCargo(c echo.Context, token string) (id int64, err error) {
 		sets = sets[:len(sets)-1]
 	}
 
-	sql = fmt.Sprintf("UPDATE cargos SET %s WHERE id = %d", sets, *cargo.ID)
+	sql = fmt.Sprintf("UPDATE cargos SET %s WHERE id = %d", sets, *cargo.Id)
 
 	db := getDB(token)
 	if db == nil {
@@ -285,8 +336,8 @@ func putCargo(c echo.Context, token string) (id int64, err error) {
 		return
 	}
 
-	id = *cargo.ID
-
+	id = *cargo.Id
+	_ = putCargoSql(id, sql, getUser(token), db)
 	return
 }
 
@@ -307,11 +358,14 @@ func deleteCargo(c echo.Context, token string) (id int64, err error) {
 		return
 	}
 
+	defer stmt.Close()
+	logrus.Debugf("deleteCargo: %s %v", sql, id)
 	result, err := stmt.Exec(id)
 	if err != nil {
 		logrus.Errorf("deleteCargo: %v", err)
 		return
 	}
 
+	_ = putCargoSql(id, sql, getUser(token), db)
 	return result.RowsAffected()
 }

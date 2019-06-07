@@ -161,3 +161,15 @@ func DeleteCargo() echo.HandlerFunc {
 		}
 	}
 }
+
+func GetCargoSql() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		token := c.Request().Header.Get("Authorization")
+		if token == "" {
+			logrus.Error("GetCargoSql: no token got")
+			return c.JSON(http.StatusBadRequest, nil)
+		} else {
+			return c.JSON(http.StatusOK, getCargoSql(c, token))
+		}
+	}
+}

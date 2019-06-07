@@ -13,6 +13,7 @@ import (
 )
 
 func main() {
+	logrus.SetLevel(logrus.DebugLevel)
 	rand.Seed(time.Now().UnixNano())
 
 	// debug proxy
@@ -26,16 +27,19 @@ func main() {
 		},
 	}
 	e := echo.New()
+
 	g := e.Group("/")
 	g.Use(middleware.Proxy(middleware.NewRoundRobinBalancer(targets)))
 	e.Use(middleware.CORS())
 	//e.Static("/", "frontend")
 	e.POST("/apiv1/login", api.Login())
 	e.POST("/apiv1/logout", api.Logout())
-	e.GET("/apiv1/cargos", api.GetCargos())
+	e.GET("/apiv1/cargo", api.GetCargos())
 	e.POST("/apiv1/cargo", api.PostCargo())
 	e.PUT("/apiv1/cargo", api.PutCargo())
-	e.POST("/apiv1/upload", api.Upload)
 	e.DELETE("/apiv1/cargo/:id", api.DeleteCargo())
+	e.POST("/apiv1/attach", api.Upload)
+	e.GET("/apiv1/attach/:file", api.Download)
+	e.GET("/apiv1/sql", api.GetCargoSql())
 	e.Start(":8081")
 }
