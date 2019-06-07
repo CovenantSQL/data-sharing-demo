@@ -13,7 +13,7 @@
             <v-spacer></v-spacer>
             <v-dialog v-model="dialog" max-width="500px">
               <template v-slot:activator="{ on }">
-                <v-btn color="primary" dark class="mb-2" v-on="on">New Item</v-btn>
+                <v-btn color="#666" dark class="mb-2" v-on="on">New Item</v-btn>
               </template>
               <v-card>
                 <v-card-title>
@@ -108,12 +108,13 @@
               :headers="headers"
               :items="items"
               :expand="expand"
+              :loading="loadingMain"
               :rows-per-page-items="rowsPerPage"
               class="crud"
           >
             <v-progress-linear v-slot:progress color="blue" indeterminate></v-progress-linear>
             <template slot="items" slot-scope="props">
-              <tr @click="props.expanded = !props.expanded">
+              <tr @click="expendItem(props)">
                 <td>{{ props.item.id }}</td>
                 <td class="text-xs-left">{{ props.item.serial }}</td>
                 <td class="text-xs-left">{{ props.item.factory }}</td>
@@ -125,18 +126,19 @@
                 <td class="text-xs-left">{{ props.item.hospital }}</td>
                 <td class="text-xs-left">{{ props.item.patient }}</td>
                 <td class="justify-center px-0">
-                  <span v-if="props.item.attach_uri"><v-icon small>attach_file</v-icon></span>
+                  <span v-if="props.item.attach_uri"><v-icon color="#bbb" small>attach_file</v-icon></span>
                 </td>
                 <td class="justify-center layout px-0">
                   <v-icon
                       small
-                      class="mr-2"
+                      class="mr-1"
                       @click="editItem(props.item)"
                   >
                     edit
                   </v-icon>
                   <v-icon
                       small
+                      class="mr-3"
                       @click="deleteItem(props.item)"
                   >
                     delete
@@ -144,10 +146,48 @@
                 </td>
               </tr>
             </template>
-            <template v-slot:expand="props">
-              <v-card flat>
-                <v-card-text>Peek-a-boo!</v-card-text>
-              </v-card>
+            <template v-slot:expand="props" v-slot:no-data>
+              <v-layout row>
+                <v-flex xs12 sm6 md9 offset-sm1>
+                    <v-list
+                        :loading="false"
+                        dense
+                        two-line
+                    >
+                      <template v-for="(item, index) in expandItems">
+                        <v-list-tile
+                            :key="item.id"
+                            avatar
+                            ripple
+                            @click="goExplorer(item.hash)"
+                        >
+                          <v-list-tile-content>
+                            <v-icon small>verified_user</v-icon>
+                            <v-list-tile-title>
+                              <div>
+                                <prism language="sql" :code="item.sql"></prism>
+                              </div>
+                            </v-list-tile-title>
+
+                            <v-list-tile-sub-title><v-icon small>fingerprint</v-icon>{{ item.hash }}</v-list-tile-sub-title>
+                          </v-list-tile-content>
+
+                          <v-list-tile-action>
+                            <v-list-tile-action-text>{{ item.user }}</v-list-tile-action-text>
+                            <v-icon>
+                              storage
+                            </v-icon>
+                          </v-list-tile-action>
+
+                        </v-list-tile>
+                        <v-divider
+                            v-if="index + 1 < items.length"
+                            :key="index"
+                        ></v-divider>
+                      </template>
+                    </v-list>
+                </v-flex>
+              </v-layout>
             </template>
             <template v-slot:no-data>
               <v-btn color="primary" @click="initialize">Reload</v-btn>
@@ -162,6 +202,10 @@
 <script>
   import axios from 'axios';
   import vueDropzone from "vue2-dropzone";
+  import 'prismjs'
+  import 'prismjs/themes/prism.css'
+  import Prism from 'vue-prism-component'
+  import 'prismjs/components/prism-sql'
 
   export default {
     data: () => ({
@@ -179,6 +223,7 @@
       haveAttach: false,
       isMounted: false,
       expand: false,
+      loadingMain: true,
       rowsPerPage: [20, 50, 100, {"text": "$vuetify.dataIterator.rowsPerPageAll", "value": -1}],
       menu: '',
       date: '',
@@ -198,6 +243,7 @@
         {text: 'Patient', value: 'patient'},
       ],
       items: [],
+      expandItems: [],
       editedIndex: -1,
       editedItem: {
         serial: '',
@@ -228,7 +274,8 @@
     }),
 
     components: {
-      vueDropzone
+      vueDropzone,
+      Prism
     },
 
     computed: {
@@ -250,7 +297,7 @@
     methods: {
       UploadZoneMount() {
         let file = {size: 0, name: this.editedItem.attach_uri};
-        let url = "http://localhost:8081/apiv1/attach/" + this.editedItem.attach_uri;
+        let url = "/apiv1/attach/" + this.editedItem.attach_uri;
         this.$log.debug(file, url)
         this.$refs.myVueDropzone.manuallyAddFile(file, url)
         this.isMounted = true;
@@ -262,6 +309,7 @@
         this.editedItem.attach_sum = response.attach_sum;
       },
       initialize() {
+        this.loadingMain = true;
         axios.defaults.headers.common['Authorization'] = localStorage.getItem('token');
         axios.get('/apiv1/cargo')
           .then(resp => {
@@ -274,6 +322,7 @@
                 text: "no cargo got",
               });
             }
+            this.loadingMain = false;
             this.$log.debug(resp);
           })
           .catch(err => {
@@ -283,10 +332,38 @@
               title: "Get cargo failed",
               text: err.response.data,
             });
+            this.loadingMain = false;
             this.$log.error(err);
           });
       },
-
+      expendItem(exp) {
+        this.loadingMain = true;
+        axios.defaults.headers.common['Authorization'] = localStorage.getItem('token');
+        axios.get('/apiv1/sql', {params: {cargo_id: exp.item.id, limit: 10}})
+          .then(resp => {
+            this.expandItems = resp.data;
+            if (resp.data !== null) {
+              exp.expanded = !exp.expanded;
+            }
+            this.loadingMain = false;
+            this.$log.debug(resp);
+          })
+          .catch(err => {
+            this.$notify({
+              group: 'crud',
+              type: 'error',
+              title: "Get sql failed",
+              text: err.response.data,
+            });
+            this.loadingMain = false;
+            this.$log.error(err);
+          });
+      },
+      goExplorer(hash) {
+        const explorer = 'http://localhost:8082/dbs/' +
+          'b77422b30688fdc8facfe84a0c48c1f94aca3444178a9502753b3692a5576f10/requests/';
+        window.open(explorer + hash, "_blank");
+      },
       editItem(item) {
         axios.defaults.headers.common['Authorization'] = localStorage.getItem('token');
         this.editedIndex = this.items.indexOf(item);
@@ -386,7 +463,11 @@
 </script>
 
 <style>
-  table.v-table tbody td:first-child, table.v-table tbody td:not(:first-child), table.v-table tbody th:first-child, table.v-table tbody th:not(:first-child), table.v-table thead td:first-child, table.v-table thead td:not(:first-child), table.v-table thead th:first-child, table.v-table thead th:not(:first-child) {
-    padding: 0 12px
+  code[class="language-sql"], pre[class="language-sql"] {
+    padding: 0em;
+    margin: 0em;
+    margin-left: .5em;
+    overflow: auto;
+    background: hsla(0, 0%, 100%, 0);
   }
 </style>

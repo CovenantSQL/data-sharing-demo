@@ -56,7 +56,7 @@ func getCargoSql(c echo.Context, token string) (result []SqlRecord) {
 	}
 
 	defer rows.Close()
-	logrus.Debugf("getCargoSql: %s %v", sql)
+	logrus.Debugf("getCargoSql: %s", sql)
 
 	for rows.Next() {
 		record := SqlRecord{}
