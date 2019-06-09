@@ -1,7 +1,15 @@
 <template>
   <v-container>
+    <v-flex xs12 sm4 md4 offset-xs4>
+      <v-text-field
+          label="端到端密钥"
+          hint="密码仅保存在浏览器端"
+          v-model="e2eePass"
+      ></v-text-field>
+    </v-flex>
+
     <div id="app">
-      <v-app id="inspire">
+      <v-app id="demo">
         <div>
           <v-toolbar flat color="white">
             <v-toolbar-title>疫苗供应链管理 Demo</v-toolbar-title>
@@ -13,7 +21,7 @@
             <v-spacer></v-spacer>
             <v-dialog v-model="dialog" max-width="500px">
               <template v-slot:activator="{ on }">
-                <v-btn color="#666" dark class="mb-2" v-on="on">New Item</v-btn>
+                <v-btn color="#666" dark class="mb-2" v-on="on">Add</v-btn>
               </template>
               <v-card>
                 <v-card-title>
@@ -92,6 +100,8 @@
                   <div id="dropUpload">
                     <vue-dropzone id="uploadField" ref="myVueDropzone"
                                   @vdropzone-success="UploadSuccess"
+                                  thumbnailHeight="80"
+                                  thumbnailWidth="80"
                                   :options="dropOptions">
                     </vue-dropzone>
                   </div>
@@ -117,14 +127,14 @@
               <tr @click="expendItem(props)">
                 <td>{{ props.item.id }}</td>
                 <td class="text-xs-left">{{ props.item.serial }}</td>
-                <td class="text-xs-left">{{ props.item.factory }}</td>
+                <td class="text-xs-left factory-cell">{{ props.item.factory }}</td>
                 <td class="text-xs-left">{{ props.item.date }}</td>
                 <td class="text-xs-left">{{ props.item.batch }}</td>
                 <td class="text-xs-left">{{ props.item.carrier }}</td>
                 <td class="text-xs-left">{{ props.item.cold_van }}</td>
                 <td class="text-xs-left">{{ props.item.distributor }}</td>
                 <td class="text-xs-left">{{ props.item.hospital }}</td>
-                <td class="text-xs-left">{{ props.item.patient }}</td>
+                <td class="text-xs-left patient-cell">{{ props.item.patient }}</td>
                 <td class="justify-center px-0">
                   <span v-if="props.item.attach_uri"><v-icon color="#bbb" small>attach_file</v-icon></span>
                 </td>
@@ -149,43 +159,46 @@
             <template v-slot:expand="props" v-slot:no-data>
               <v-layout row>
                 <v-flex xs12 sm6 md9 offset-sm1>
-                    <v-list
-                        :loading="false"
-                        dense
-                        two-line
-                    >
-                      <template v-for="(item, index) in expandItems">
-                        <v-list-tile
-                            :key="item.id"
-                            avatar
-                            ripple
-                            @click="goExplorer(item.hash)"
-                        >
-                          <v-list-tile-content>
-                            <v-icon small>verified_user</v-icon>
-                            <v-list-tile-title>
-                              <div>
-                                <prism language="sql" :code="item.sql"></prism>
-                              </div>
-                            </v-list-tile-title>
+                  <v-list
+                      :loading="false"
+                      dense
+                      two-line
+                  >
+                    <template v-for="(item, index) in expandItems">
+                      <v-list-tile
+                          :key="item.id"
+                          avatar
+                          ripple
+                          @click="goExplorer(item.hash)"
+                      >
+                        <v-list-tile-content>
+                          <v-icon small>verified_user</v-icon>
+                          <v-list-tile-title>
+                            <div>
+                              <prism language="sql" :code="item.sql"></prism>
+                            </div>
+                          </v-list-tile-title>
 
-                            <v-list-tile-sub-title><v-icon small>fingerprint</v-icon>{{ item.hash }}</v-list-tile-sub-title>
-                          </v-list-tile-content>
+                          <v-list-tile-sub-title>
+                            <v-icon small>fingerprint</v-icon>
+                            {{ item.hash }}
+                          </v-list-tile-sub-title>
+                        </v-list-tile-content>
 
-                          <v-list-tile-action>
-                            <v-list-tile-action-text>{{ item.user }}</v-list-tile-action-text>
-                            <v-icon>
-                              storage
-                            </v-icon>
-                          </v-list-tile-action>
+                        <v-list-tile-action>
+                          <v-list-tile-action-text>{{ item.user }}</v-list-tile-action-text>
+                          <v-icon>
+                            storage
+                          </v-icon>
+                        </v-list-tile-action>
 
-                        </v-list-tile>
-                        <v-divider
-                            v-if="index + 1 < items.length"
-                            :key="index"
-                        ></v-divider>
-                      </template>
-                    </v-list>
+                      </v-list-tile>
+                      <v-divider
+                          v-if="index + 1 < items.length"
+                          :key="index"
+                      ></v-divider>
+                    </template>
+                  </v-list>
                 </v-flex>
               </v-layout>
             </template>
@@ -200,15 +213,19 @@
 </template>
 
 <script>
-  import axios from 'axios';
-  import vueDropzone from "vue2-dropzone";
+  import axios from 'axios'
+  import vueDropZone from "vue2-dropzone"
   import 'prismjs'
   import 'prismjs/themes/prism.css'
   import Prism from 'vue-prism-component'
   import 'prismjs/components/prism-sql'
+  import e2e from 'e2e_js'
+
+  const aes = require('aes-js');
 
   export default {
     data: () => ({
+      e2eePass: '',
       dropOptions: {
         url: "/apiv1/attach",
         maxFilesize: 20, // MB
@@ -274,7 +291,7 @@
     }),
 
     components: {
-      vueDropzone,
+      vueDropzone: vueDropZone,
       Prism
     },
 
@@ -283,11 +300,18 @@
         return this.editedIndex === -1 ? 'New Item' : 'Edit Item'
       }
     },
-
+    mounted() {
+      if (localStorage.e2eePass) {
+        this.e2eePass = localStorage.e2eePass;
+      }
+    },
     watch: {
       dialog(val) {
         val || this.close()
       },
+      e2eePass(pass) {
+        localStorage.e2eePass = pass;
+      }
     },
 
     created() {
@@ -295,6 +319,12 @@
     },
 
     methods: {
+      to_hex(d) {
+        return aes.utils.hex.fromBytes(d);
+      },
+      from_hex(s) {
+        return new Uint8Array(aes.utils.hex.toBytes(s));
+      },
       UploadZoneMount() {
         let file = {size: 0, name: this.editedItem.attach_uri};
         let url = "/apiv1/attach/" + this.editedItem.attach_uri;
@@ -367,7 +397,16 @@
       editItem(item) {
         axios.defaults.headers.common['Authorization'] = localStorage.getItem('token');
         this.editedIndex = this.items.indexOf(item);
-        this.editedItem = Object.assign({}, item);
+        // this.editedItem = Object.assign({}, item);
+        for (let key in item) {
+          let value = item[key];
+          if (key === 'patient' && value !== null) {
+            this.editedItem[key] = e2e.decrypt_string(this.from_hex(value), this.e2eePass)
+          } else {
+            this.editedItem[key] = value
+          }
+        }
+
         this.$log.debug("edit: ", this.editedIndex, item);
         this.dialog = true;
         this.UploadZoneMount();
@@ -408,7 +447,13 @@
           for (let key in this.editedItem) {
             if (!(key in this.items[this.editedIndex]) ||
               this.editedItem[key] !== this.items[this.editedIndex][key]) {
-              diff[key] = this.editedItem[key];
+              let value = this.editedItem[key];
+              if (key === 'patient') {
+                let encodedVal = new TextEncoder().encode(value)
+                diff[key] = this.to_hex(e2e.encrypt(encodedVal, this.e2eePass))
+              } else {
+                diff[key] = value;
+              }
             }
           }
           if (Object.keys(diff).length > 0) {
@@ -417,7 +462,8 @@
             axios.put('/apiv1/cargo', diff)
               .then(resp => {
                 this.$log.debug(resp);
-                Object.assign(this.items[this.editedIndex], this.editedItem);
+                this.initialize();
+                // Object.assign(this.items[this.editedIndex], this.editedItem);
                 this.$refs.myVueDropzone.removeAllFiles();
               })
               .catch(err => {
@@ -435,7 +481,13 @@
           for (let key in this.editedItem) {
             if (key in this.defaultItem &&
               this.editedItem[key] !== this.defaultItem[key]) {
-              insert[key] = this.editedItem[key];
+              let value = this.editedItem[key];
+              if (key === 'patient') {
+                let encodedVal = new TextEncoder().encode(value)
+                insert[key] = this.to_hex(e2e.encrypt(encodedVal, this.e2eePass))
+              } else {
+                insert[key] = value;
+              }
             }
           }
           if (Object.keys(insert).length > 0) {
@@ -444,6 +496,7 @@
               .then(resp => {
                 this.$log.debug(resp)
                 this.items.push(this.editedItem)
+                this.initialize();
               })
               .catch(err => {
                 this.$notify({
@@ -465,9 +518,27 @@
 <style>
   code[class="language-sql"], pre[class="language-sql"] {
     padding: 0em;
-    margin: 0em;
-    margin-left: .5em;
+    margin: 0em 0em 0em .5em;
     overflow: auto;
     background: hsla(0, 0%, 100%, 0);
+  }
+
+  td.patient-cell {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 10em;
+  }
+
+  td.factory-cell {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 3em;
+  }
+
+  div.dz-details, div.dz-preview {
+    width: 120px;
+    height: 120px;
   }
 </style>

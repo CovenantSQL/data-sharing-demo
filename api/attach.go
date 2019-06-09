@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"io"
 	"net/http"
+	"net/url"
 	"path/filepath"
 
 	"github.com/Sirupsen/logrus"
@@ -98,7 +99,11 @@ func Download(c echo.Context) (err error) {
 	}
 	downloader := s3manager.NewDownloader(sess)
 	buff := &aws.WriteAtBuffer{}
-	objName := c.Param("file")
+	objName, err := url.PathUnescape(c.Param("file"))
+	if err != nil {
+		logrus.Errorf("un escape path failed: %s", c.Param("file"))
+		return c.JSON(http.StatusBadRequest, err)
+	}
 	numBytes, err := downloader.Download(buff,
 		&s3.GetObjectInput{
 			Bucket: aws.String(bucket),
