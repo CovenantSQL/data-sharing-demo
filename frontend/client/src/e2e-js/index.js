@@ -2,7 +2,7 @@
 
 const BLOCK_SIZE = 16;
 
-var pkcs7 = require('pkcs7'),
+const pkcs7 = require('pkcs7'),
   aes = require('aes-js'),
   hash = require('hash.js'),
   salt = new Uint8Array([
@@ -92,7 +92,7 @@ function decrypt_string(c, passwd) {
   return aes.utils.utf8.fromBytes(d);
 }
 
-var e2e = {
+const e2e = {
   encrypt: encrypt,
   decrypt: decrypt,
   decrypt_string: decrypt_string,

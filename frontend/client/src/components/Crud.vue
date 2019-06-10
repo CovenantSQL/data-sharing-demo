@@ -445,11 +445,22 @@
         if (this.editedIndex > -1) {
           let diff = {};
           for (let key in this.editedItem) {
-            if (!(key in this.items[this.editedIndex]) ||
-              this.editedItem[key] !== this.items[this.editedIndex][key]) {
+            let originItem = this.items[this.editedIndex];
+            if (!(key in originItem) ||
+              this.editedItem[key] !== originItem[key]) {
               let value = this.editedItem[key];
+              this.$log.debug(value, originItem[key]);
               if (key === 'patient') {
-                let encodedVal = new TextEncoder().encode(value)
+                if (originItem[key] !== null) {
+                  let originValue = e2e.decrypt_string(
+                    this.from_hex(originItem[key]),
+                    this.e2eePass
+                  );
+                  if (value === originValue) {
+                    continue
+                  }
+                }
+                let encodedVal = new TextEncoder().encode(value);
                 diff[key] = this.to_hex(e2e.encrypt(encodedVal, this.e2eePass))
               } else {
                 diff[key] = value;
@@ -483,7 +494,7 @@
               this.editedItem[key] !== this.defaultItem[key]) {
               let value = this.editedItem[key];
               if (key === 'patient') {
-                let encodedVal = new TextEncoder().encode(value)
+                let encodedVal = new TextEncoder().encode(value);
                 insert[key] = this.to_hex(e2e.encrypt(encodedVal, this.e2eePass))
               } else {
                 insert[key] = value;
@@ -517,8 +528,8 @@
 
 <style>
   code[class="language-sql"], pre[class="language-sql"] {
-    padding: 0em;
-    margin: 0em 0em 0em .5em;
+    padding: 0;
+    margin: 0 0 0 .5em;
     overflow: auto;
     background: hsla(0, 0%, 100%, 0);
   }
