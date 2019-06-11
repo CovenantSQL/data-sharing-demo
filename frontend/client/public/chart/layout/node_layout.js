@@ -164,6 +164,10 @@ define([], function () {
 
                             this.exit().remove();
                         })
+                  if (d3.select(this).select("g.log").selectAll("g.log-entry").size() > 6) {
+                    d3.select(this).select("g.log").select("g.log-entry").remove();
+                    d3.select(this).select("g.log").select("g.log-entry").remove();
+                  }
                 })
 
                 g = this.exit()
@@ -201,7 +205,7 @@ define([], function () {
     };
 
     NodeLayout.prototype.layout = function (x, y, w, h) {
-        var i, j, node, entry, step, 
+        var i, j, node, entry, step,
             model = this.parent().model(),
             nodes = this.nodes(),
             angle = ANGLE[nodes.length];
@@ -239,7 +243,7 @@ define([], function () {
                 entry.w = ENTRY.w;
                 entry.h = ENTRY.h;
             }
-            
+
         }
     };
 

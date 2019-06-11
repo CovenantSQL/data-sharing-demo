@@ -5,14 +5,27 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <link rel="icon" href="<%= BASE_URL %>favicon.ico">
-    <title>client</title>
+    <title>疫苗供应链管理 Demo</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Material+Icons">
+    <script src="chart/scripts/jquery/jquery-2.0.3.min.js"></script>
+    <script src="chart/scripts/d3/d3-3.3.9.min.js"></script>
+    <script src="chart/scripts/playback/playback.js"></script>
+    <script src="chart/scripts/tsld/tsld.js"></script>
+    <script>
+      var require = {urlArgs: "t=" + (new Date()).getTime()};
+    </script>
+    <script data-main="chart/reg_to_window.js" src="chart/scripts/require/require-2.1.9.js"></script>
   </head>
   <body>
     <noscript>
       <strong>We're sorry but client doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
     </noscript>
+    <div class="container">
+      <div id="chart">
+      </div>
+    </div>
+
     <div id="app"></div>
     <!-- built files will be auto injected -->
   </body>

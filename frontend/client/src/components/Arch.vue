@@ -1,48 +1,145 @@
 <template>
   <div class="container">
     <div id="arch">
+      <div class="container">
+        <div id="chart">
+        </div>
+        <v-btn color="primary" @click="load">load</v-btn>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-  import 'jquery'
-  import '../chart/model/model'
-  import '../chart/layout/layout'
-  import '../chart/frames/init'
-  import '../chart/scripts/domReady/domReady-2.0.1'
-  import 'd3'
-  import '../chart/scripts/playback/playback'
-  import '../chart/scripts/tsld/tsld'
   export default {
     name: "Arch",
-    created() {
-      this.initialize()
+    data() {
+      return {
+        frame_num: 0,
+        currentFrame: null,
+      }
+    },
+    mounted() {
+
     },
     methods: {
-      initialize() {
-        var i, menu, frame,
-          player = playback.player();
-        player.layout(new Layout("#chart"));
-        player.model(new Model());
-        player.resizeable(true);
-        frames(player);
+      load: function () {
+        if (this.frame_num === 0) {
+          window.archPlayer.frame(this.frame_num, "Log Replication" + this.frame_num, this.initFrame());
+        } else {
+          // window.archPlayer.current().model().clients.create("Y" + this.frame_num);
+          // window.archPlayer.frame(this.frame_num, "Log Replication" + this.frame_num, this.newFrame());
+          window.archPlayer.next()
+          this.newFrame()(window.archPlayer.current())
+        }
+        this.frame_num += 1;
+      },
+      initFrame: function () {
+        return function (fr) {
+          this.currentFrame = fr;
+          var player = fr.player(),
+            layout = fr.layout(),
+            model = function () {
+              return fr.model();
+            },
+            client = function (id) {
+              return fr.model().clients.find(id);
+            },
+            node = function (id) {
+              return fr.model().nodes.find(id);
+            },
+            cluster = function (value) {
+              model().nodes.toArray().forEach(function (node) {
+                node.cluster(value);
+              });
+            };
 
-        // Handle "continue" button click.
-        $(doc).on("click", ".btn.resume", function () {
-          player.current().model().controls.resume.click();
-        });
-        // Refresh the messages on every frame.
-        player.addEventListener("tick", function () {
-          player.current().model().tick(player.current().playhead());
-          player.layout().messages.invalidate();
-          player.layout().nodes.invalidateElectionTimers();
-        });
-        // Write out the frames to the menu.
-        menu = $("nav .dropdown-menu");
-        menu.empty();
-        for (i = 0; i < player.frames().length; i += 1) {
-          frame = player.frame(i);
+          fr.after(0, function () {
+            model().clear();
+          })
+            .after(0, function () {
+              fr.model().title = '<h2 style="visibility:visible">Log Replication</h1>'
+                + '<br/>' + fr.model().controls.html();
+            })
+            .after(0, function () {
+              model().title = "";
+            })
+
+            //------------------------------
+            // Cluster Initialization
+            //------------------------------
+            .after(0, function () {
+              model().nodes.create("A");
+              model().nodes.create("B");
+              model().nodes.create("C");
+              cluster(["A", "B", "C"]);
+              model().clients.create("X");
+              layout.invalidate();
+            })
+            .after(200, function () {
+              model().forceImmediateLeader();
+            })
+
+
+            //------------------------------
+            // Single Entry Replication
+            //------------------------------
+            .after(300, function () {
+            })
+            .after(500, function () {
+              client("X").send(model().leader(), "SET 5");
+            })
+            .after(model().defaultNetworkLatency, function () {
+            })
+            .at(model(), "appendEntriesRequestsSent", function () {
+            })
+            .after(model().defaultNetworkLatency * 0.25, function () {
+            })
+            .at(model(), "commitIndexChange", function (event) {
+            })
+            .after(model().defaultNetworkLatency * 0.25, function () {
+            })
+            .after(model().defaultNetworkLatency, function () {
+              client("X").send(model().leader(), "ADD 2");
+            })
+            .at(model(), "recv", function () {
+            })
+
+
+          player.play();
+        }
+      },
+      newFrame: function () {
+        return function (fr) {
+          var player = fr.player(),
+            model = function () {
+              return fr.model();
+            },
+            client = function (id) {
+              return fr.model().clients.find(id);
+            }
+
+          fr.after(500, function () {
+            client("X").send(model().leader(), "SET 5");
+          })
+            .after(model().defaultNetworkLatency, function () {
+            })
+            .at(model(), "appendEntriesRequestsSent", function () {
+            })
+            .after(model().defaultNetworkLatency * 0.25, function () {
+            })
+            .at(model(), "commitIndexChange", function (event) {
+            })
+            .after(model().defaultNetworkLatency * 0.25, function () {
+            })
+            .after(model().defaultNetworkLatency, function () {
+              client("X").send(model().leader(), "ADD 2");
+            })
+            .at(model(), "recv", function () {
+            })
+
+
+          player.play();
         }
       }
     }
@@ -53,6 +150,7 @@
   svg rect {
     shape-rendering: crispEdges
   }
+
   nav {
     z-index: 1000;
   }

@@ -48,7 +48,7 @@
       "plugin:vue/essential",
       "eslint:recommended"
     ],
-    "rules": {},
+    "rules": {"no-unused-vars": ["error", { "args": "none" }]},
     "parserOptions": {
       "parser": "babel-eslint"
     }
