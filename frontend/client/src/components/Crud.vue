@@ -348,7 +348,7 @@
               this.$notify({
                 group: 'crud',
                 type: 'error',
-                title: "Get cargo failed",
+                title: "获取信息失败",
                 text: "no cargo got",
               });
             }
@@ -359,7 +359,7 @@
             this.$notify({
               group: 'crud',
               type: 'error',
-              title: "Get cargo failed",
+              title: "获取信息失败",
               text: err.response.data,
             });
             this.loadingMain = false;
@@ -382,7 +382,7 @@
             this.$notify({
               group: 'crud',
               type: 'error',
-              title: "Get sql failed",
+              title: "获取区块链上的 SQL 记录失败",
               text: err.response.data,
             });
             this.loadingMain = false;
@@ -401,7 +401,16 @@
         for (let key in item) {
           let value = item[key];
           if (key === 'patient' && value !== null) {
-            this.editedItem[key] = e2e.decrypt_string(this.from_hex(value), this.e2eePass)
+            try {
+              this.editedItem[key] = e2e.decrypt_string(this.from_hex(value), this.e2eePass)
+            } catch (e) {
+              this.$notify({
+                group: 'crud',
+                type: 'error',
+                title: "解密敏感信息失败",
+                text: e,
+              });
+            }
           } else {
             this.editedItem[key] = value
           }
@@ -409,7 +418,9 @@
 
         this.$log.debug("edit: ", this.editedIndex, item);
         this.dialog = true;
-        this.UploadZoneMount();
+        if (item['attach_uri'] !== null) {
+          this.UploadZoneMount();
+        }
       },
 
       deleteItem(item) {
@@ -425,7 +436,7 @@
             this.$notify({
               group: 'crud',
               type: 'error',
-              title: "Del cargo failed",
+              title: "删除信息失败",
               text: err.response.data,
             });
             this.$log.error(err)
@@ -481,7 +492,7 @@
                 this.$notify({
                   group: 'crud',
                   type: 'error',
-                  title: "Modify cargo failed",
+                  title: "修改信息失败",
                   text: err.response.data,
                 });
                 this.$log.error(err)
@@ -513,7 +524,7 @@
                 this.$notify({
                   group: 'crud',
                   type: 'error',
-                  title: "Create cargo failed",
+                  title: "创建新条目失败",
                   text: err.response.data,
                 });
                 this.$log.error(err)

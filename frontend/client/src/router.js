@@ -4,6 +4,7 @@ import store from './store.js'
 import Home from './views/Home.vue'
 import About from './views/About.vue'
 import Login from './components/Login.vue'
+import Arch from "./components/Arch";
 
 Vue.use(Router)
 
@@ -22,6 +23,11 @@ let router = new Router({
       path: '/login',
       name: 'login',
       component: Login
+    },
+    {
+      path: '/arch',
+      name: 'arch',
+      component: Arch
     },
     {
       path: '/about',

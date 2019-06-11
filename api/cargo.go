@@ -30,7 +30,7 @@ type Cargo struct {
 const (
 	CargoMigrate = `
 		CREATE TABLE cargos (
-			id INTEGER PRIMARY KEY,
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			serial VARCHAR,
 			factory VARCHAR,
 			date TIMESTAMP,

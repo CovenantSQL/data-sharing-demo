@@ -20,7 +20,7 @@ type SqlRecord struct {
 const (
 	SqlMigrate = `
 		CREATE TABLE sqls (
-			id INTEGER PRIMARY KEY,
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			sql VARCHAR,
 			cargo_id VARCHAR,
 			hash VARCHAR,
