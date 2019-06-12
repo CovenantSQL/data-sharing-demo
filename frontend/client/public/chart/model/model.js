@@ -37,7 +37,7 @@ define(["./controls", "./client", "./message", "./node", "./partition"], functio
     /**
      * The default network latency between two nodes if not set.
      */
-    Model.DEFAULT_NETWORK_LATENCY   = 20 / Model.SIMULATION_RATE;
+    Model.DEFAULT_NETWORK_LATENCY   = 10 / Model.SIMULATION_RATE;
 
     /**
      * The default heartbeat timeout for the model.
@@ -200,7 +200,7 @@ define(["./controls", "./client", "./message", "./node", "./partition"], functio
             if (node.id !== candidateId && startTime < minStartTime) {
                 node.electionTimer().startTime(minStartTime);
             }
-        });        
+        });
 
         return candidateId;
     };
@@ -217,7 +217,7 @@ define(["./controls", "./client", "./message", "./node", "./partition"], functio
         nodes.forEach(function (node) {
             var minStartTime = minTime + (self.defaultNetworkLatency * 1.25);
             node.electionTimer().startTime(minStartTime);
-        });        
+        });
     };
 
     /**

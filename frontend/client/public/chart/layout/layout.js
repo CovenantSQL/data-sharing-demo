@@ -38,11 +38,11 @@ define(["./node_layout", "./client_layout", "./message_layout", "./partition_lay
         } else if (this.model().nodes.size() > 0) {
             nw = NodeLayout.WIDTH / 2;
         }
-        ncp = (nw > 0 && cw > 0 ? 10 : 0);
+        ncp = (nw > 0 && cw > 0 ? 8 : 0);
 
         tsld.Layout.prototype.invalidate.call(this);
 
-        this.clients.invalidate(50 - ((nw + ncp + cw) / 2), 0, cw, 100);
+        this.clients.invalidate(35 - ((nw + ncp + cw) / 2), 0, cw, 100);
         this.nodes.invalidate(50 - ((nw + ncp + cw) / 2) + cw + ncp, 0, nw, 100);
         this.messages.invalidate();
         this.partitions.invalidate();

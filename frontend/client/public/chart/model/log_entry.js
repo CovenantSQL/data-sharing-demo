@@ -33,19 +33,22 @@ define([], function () {
      * Applies the log to a node.
      */
     LogEntry.prototype.applyTo = function (node) {
-        var m = this.command.match(/^(\w+) (\d+)$/);
-        switch (m[1]) {
-        case "ADD":
-            node._value += parseInt(m[2], 10);
+        if (node._value <= 0) {
+            node._value = 0
+        }
+        var m = this.command.match(/^(\w+) .*$/);
+        switch (m[1].toUpperCase()) {
+        case "UPDATE":
+            node._value += parseInt(1, 10);
             break;
-        case "SET":
-            node._value = parseInt(m[2], 10);
+        case "DELETE":
+            node._value += parseInt(1, 10);
             break;
-        case "SUB":
-            node._value -= parseInt(m[2], 10);
+        case "INSERT":
+            node._value += parseInt(1, 10);
             break;
         }
-        
+
         if (this.callback !== null) {
             this.callback();
         }

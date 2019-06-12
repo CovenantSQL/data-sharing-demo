@@ -40,18 +40,19 @@ define([], function () {
 
         this.resume = {
             show: function() {
-                $(".btn.resume").css('visibility','visible').hide().fadeIn(600);
+                // $(".btn.resume").css('visibility','visible').hide().fadeIn(600);
             },
             html: function() {
-                return '<button type="button" style="visibility:hidden" class="btn btn-default resume" alt="Continue to next frame">Continue <span class="glyphicon glyphicon-chevron-right"></span></button>';
+                return ''
+                // return '<button type="button" style="visibility:hidden" class="btn btn-default resume" alt="Continue to next frame">Continue <span class="glyphicon glyphicon-chevron-right"></span></button>';
             },
             click: function() {
-                if (self.callback !== null) {
-                    self.callback();
-                    self.callback = null;
-                } else {
-                    model.player().play();
-                }
+                // if (self.callback !== null) {
+                //     self.callback();
+                //     self.callback = null;
+                // } else {
+                //     model.player().play();
+                // }
             },
         };
     }

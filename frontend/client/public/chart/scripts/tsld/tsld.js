@@ -282,8 +282,8 @@ function Layout(selector) {
     this.selector = selector;
     this.prevTitle = this.prevSubtitle = "";
     this.padding = {
-        top: 70,
-        bottom: 160,
+        top: 30,
+        bottom: 30,
         left: 0,
         right: 0,
     };
@@ -325,7 +325,7 @@ Layout.prototype.invalidate = function () {
     var zoom,
         model = this.model(),
         width = this.container.width(),
-        height = $(window).height() - this.padding.top - this.padding.bottom,
+        height = this.container.height() - this.padding.top - this.padding.bottom,
         viewport = {
             width: width - (PAD * 2),
             height: height - (PAD * 2),

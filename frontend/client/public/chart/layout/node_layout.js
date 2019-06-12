@@ -11,7 +11,12 @@ define([], function () {
     this._parent = parent;
   }
 
-  NodeLayout.WIDTH = 25;
+  function trimText(text) {
+    if (text.length <= 27) return text;
+    return text.substr(0, 27).concat("...");
+  }
+
+  NodeLayout.WIDTH = 30;
 
   /**
    * Retrieves the parent layout.
@@ -125,13 +130,12 @@ define([], function () {
 
           // Description.
           var desc = [];
-          desc.push("Node " + node.id);
-          desc.push("Term: " + node.currentTerm());
+          desc.push("Miner " + node.id);
           desc.push();
           if (node.state() === "candidate") {
             desc.push("Vote Count: " + node.voteCount());
           } else if (node.leaderId() !== null) {
-            desc.push("Leader: " + node.leaderId());
+            // desc.push("Leader: " + node.leaderId());
           } else if (node.state() === "follower" && node.votedFor() !== null) {
             desc.push("Voted For: " + node.votedFor());
           }
@@ -191,7 +195,7 @@ define([], function () {
                 .attr("transform", transform);
               g.select("rect")
                 .attr("width", function (d) {
-                  return self.parent().scales.size(d.w)
+                  return self.parent().scales.size(4 * d.w)
                 })
                 .attr("height", function (d) {
                   return self.parent().scales.size(d.h)
@@ -204,7 +208,7 @@ define([], function () {
                   return self.parent().scales.font(8) + "px"
                 })
                 .text(function (d) {
-                  return d.command;
+                  return trimText(d.command);
                 })
               ;
 

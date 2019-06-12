@@ -1,213 +1,220 @@
 <template>
   <v-container>
-    <v-flex xs12 sm4 md4 offset-xs4>
-      <v-text-field
-          label="端到端密钥"
-          hint="密码仅保存在浏览器端"
-          v-model="e2eePass"
-      ></v-text-field>
-    </v-flex>
-
+    <v-card>
+      <arch-chart ref="archchart"></arch-chart>
+<!--      <v-btn color="primary" @click="animateCQL">load</v-btn>-->
+    </v-card>
+    <v-divider
+        class="mx-2"
+        inset
+        vertical
+    ></v-divider>
     <div id="app">
-      <v-app id="demo">
-        <div>
-          <v-toolbar flat color="white">
-            <v-toolbar-title>疫苗供应链管理 Demo</v-toolbar-title>
-            <v-divider
-                class="mx-2"
-                inset
-                vertical
-            ></v-divider>
-            <v-spacer></v-spacer>
-            <v-dialog v-model="dialog" max-width="500px">
-              <template v-slot:activator="{ on }">
-                <v-btn color="#666" dark class="mb-2" v-on="on">Add</v-btn>
-              </template>
-              <v-card>
-                <v-card-title>
-                  <span class="headline">{{ formTitle }}</span>
-                </v-card-title>
+      <div>
+        <v-toolbar flat color="white">
+          <v-toolbar-title>疫苗供应链管理 Demo</v-toolbar-title>
+          <v-divider
+              class="mx-2"
+              inset
+              vertical
+          ></v-divider>
+          <v-spacer></v-spacer>
+          <v-flex xs12 sm4 md4 offset-xs4>
+            <v-text-field
+                label="端到端密钥"
+                hint="密码仅保存在浏览器端"
+                v-model="e2eePass"
+            ></v-text-field>
+          </v-flex>
 
-                <v-flex xs12 sm6 md4>
-
-                </v-flex>
-
-                <v-card-text>
-                  <v-container grid-list-md>
-                    <v-layout wrap>
-                      <v-flex xs12 sm6 md4>
-                        <v-text-field v-model="editedItem.serial" label="Serial"></v-text-field>
-                      </v-flex>
-                      <v-flex xs12 sm6 md4>
-                        <v-text-field v-model="editedItem.factory" label="Factory"></v-text-field>
-                      </v-flex>
-                      <v-flex xs12 sm6 md4>
-                        <v-menu
-                            ref="menu"
-                            v-model="menu"
-                            :close-on-content-click="false"
-                            :nudge-right="40"
-                            :return-value.sync="date"
-                            lazy
-                            transition="scale-transition"
-                            offset-y
-                            full-width
-                            min-width="290px"
-                        >
-                          <template v-slot:activator="{ on }">
-                            <v-text-field
-                                v-model="editedItem.date"
-                                label="Date"
-                                readonly
-                                v-on="on"
-                            ></v-text-field>
-                          </template>
-                          <v-date-picker v-model="editedItem.date" no-title scrollable>
-                            <v-spacer></v-spacer>
-                            <v-btn flat color="primary" @click="menu = false">Cancel</v-btn>
-                            <v-btn flat color="primary" @click="$refs.menu.save(date)">OK</v-btn>
-                          </v-date-picker>
-                        </v-menu>
-                      </v-flex>
-                      <v-flex xs12 sm6 md4>
-                        <v-text-field v-model="editedItem.batch" label="Batch"></v-text-field>
-                      </v-flex>
-                      <v-flex xs12 sm6 md4>
-                        <v-text-field v-model="editedItem.carrier" label="Carrier"></v-text-field>
-                      </v-flex>
-                      <v-flex xs12 sm6 md4>
-                        <v-text-field v-model="editedItem.cold_van" label="ColdVan"></v-text-field>
-                      </v-flex>
-                      <v-flex xs12 sm6 md4>
-                        <v-text-field v-model="editedItem.distributor" label="Distributor"></v-text-field>
-                      </v-flex>
-                      <v-flex xs12 sm6 md4>
-                        <v-text-field v-model="editedItem.hospital" label="Hospital"></v-text-field>
-                      </v-flex>
-                      <v-flex xs12 sm6 md4>
-                        <v-text-field v-model="editedItem.patient" label="Patient"></v-text-field>
-                      </v-flex>
-                      <v-flex xs12 sm6 md4>
-                        <v-text-field disabled v-model="editedItem.attach_uri" label="Attach"></v-text-field>
-                      </v-flex>
-                      <v-flex xs12 sm6 md8>
-                        <v-text-field disabled v-model="editedItem.attach_sum" label="CheckSum"></v-text-field>
-                      </v-flex>
-                    </v-layout>
-                  </v-container>
-                </v-card-text>
-                <template>
-                  <div id="dropUpload">
-                    <vue-dropzone id="uploadField" ref="myVueDropzone"
-                                  @vdropzone-success="UploadSuccess"
-                                  thumbnailHeight="80"
-                                  thumbnailWidth="80"
-                                  :options="dropOptions">
-                    </vue-dropzone>
-                  </div>
-                </template>
-                <v-card-actions>
-                  <v-spacer></v-spacer>
-                  <v-btn color="blue darken-1" flat @click="close">Cancel</v-btn>
-                  <v-btn color="blue darken-1" flat @click="save">Save</v-btn>
-                </v-card-actions>
-              </v-card>
-            </v-dialog>
-          </v-toolbar>
-          <v-data-table
-              :headers="headers"
-              :items="items"
-              :expand="expand"
-              :loading="loadingMain"
-              :rows-per-page-items="rowsPerPage"
-              class="crud"
-          >
-            <v-progress-linear v-slot:progress color="blue" indeterminate></v-progress-linear>
-            <template slot="items" slot-scope="props">
-              <tr @click="expendItem(props)">
-                <td>{{ props.item.id }}</td>
-                <td class="text-xs-left">{{ props.item.serial }}</td>
-                <td class="text-xs-left factory-cell">{{ props.item.factory }}</td>
-                <td class="text-xs-left">{{ props.item.date }}</td>
-                <td class="text-xs-left">{{ props.item.batch }}</td>
-                <td class="text-xs-left">{{ props.item.carrier }}</td>
-                <td class="text-xs-left">{{ props.item.cold_van }}</td>
-                <td class="text-xs-left">{{ props.item.distributor }}</td>
-                <td class="text-xs-left">{{ props.item.hospital }}</td>
-                <td class="text-xs-left patient-cell">{{ props.item.patient }}</td>
-                <td class="justify-center px-0">
-                  <span v-if="props.item.attach_uri"><v-icon color="#bbb" small>attach_file</v-icon></span>
-                </td>
-                <td class="justify-center layout px-0">
-                  <v-icon
-                      small
-                      class="mr-1"
-                      @click="editItem(props.item)"
-                  >
-                    edit
-                  </v-icon>
-                  <v-icon
-                      small
-                      class="mr-3"
-                      @click="deleteItem(props.item)"
-                  >
-                    delete
-                  </v-icon>
-                </td>
-              </tr>
+          <v-dialog v-model="dialog" max-width="500px">
+            <template v-slot:activator="{ on }">
+              <v-btn color="#666" dark class="mb-2" v-on="on">Add</v-btn>
             </template>
-            <template v-slot:expand="props" v-slot:no-data>
-              <v-layout row>
-                <v-flex xs12 sm6 md9 offset-sm1>
-                  <v-list
-                      :loading="false"
-                      dense
-                      two-line
-                  >
-                    <template v-for="(item, index) in expandItems">
-                      <v-list-tile
-                          :key="item.id"
-                          avatar
-                          ripple
-                          @click="goExplorer(item.hash)"
+            <v-card>
+              <v-card-title>
+                <span class="headline">{{ formTitle }}</span>
+              </v-card-title>
+
+              <v-flex xs12 sm6 md4>
+
+              </v-flex>
+
+              <v-card-text>
+                <v-container grid-list-md>
+                  <v-layout wrap>
+                    <v-flex xs12 sm6 md4>
+                      <v-text-field v-model="editedItem.serial" label="Serial"></v-text-field>
+                    </v-flex>
+                    <v-flex xs12 sm6 md4>
+                      <v-text-field v-model="editedItem.factory" label="Factory"></v-text-field>
+                    </v-flex>
+                    <v-flex xs12 sm6 md4>
+                      <v-menu
+                          ref="menu"
+                          v-model="menu"
+                          :close-on-content-click="false"
+                          :nudge-right="40"
+                          :return-value.sync="date"
+                          lazy
+                          transition="scale-transition"
+                          offset-y
+                          full-width
+                          min-width="290px"
                       >
-                        <v-list-tile-content>
-                          <v-icon small>verified_user</v-icon>
-                          <v-list-tile-title>
-                            <div>
-                              <prism language="sql" :code="item.sql"></prism>
-                            </div>
-                          </v-list-tile-title>
+                        <template v-slot:activator="{ on }">
+                          <v-text-field
+                              v-model="editedItem.date"
+                              label="Date"
+                              readonly
+                              v-on="on"
+                          ></v-text-field>
+                        </template>
+                        <v-date-picker v-model="editedItem.date" no-title scrollable>
+                          <v-spacer></v-spacer>
+                          <v-btn flat color="primary" @click="menu = false">Cancel</v-btn>
+                          <v-btn flat color="primary" @click="$refs.menu.save(date)">OK</v-btn>
+                        </v-date-picker>
+                      </v-menu>
+                    </v-flex>
+                    <v-flex xs12 sm6 md4>
+                      <v-text-field v-model="editedItem.batch" label="Batch"></v-text-field>
+                    </v-flex>
+                    <v-flex xs12 sm6 md4>
+                      <v-text-field v-model="editedItem.carrier" label="Carrier"></v-text-field>
+                    </v-flex>
+                    <v-flex xs12 sm6 md4>
+                      <v-text-field v-model="editedItem.cold_van" label="ColdVan"></v-text-field>
+                    </v-flex>
+                    <v-flex xs12 sm6 md4>
+                      <v-text-field v-model="editedItem.distributor" label="Distributor"></v-text-field>
+                    </v-flex>
+                    <v-flex xs12 sm6 md4>
+                      <v-text-field v-model="editedItem.hospital" label="Hospital"></v-text-field>
+                    </v-flex>
+                    <v-flex xs12 sm6 md4>
+                      <v-text-field v-model="editedItem.patient" label="Patient"></v-text-field>
+                    </v-flex>
+                    <v-flex xs12 sm6 md4>
+                      <v-text-field disabled v-model="editedItem.attach_uri" label="Attach"></v-text-field>
+                    </v-flex>
+                    <v-flex xs12 sm6 md8>
+                      <v-text-field disabled v-model="editedItem.attach_sum" label="CheckSum"></v-text-field>
+                    </v-flex>
+                  </v-layout>
+                </v-container>
+              </v-card-text>
+              <template>
+                <div id="dropUpload">
+                  <vue-dropzone id="uploadField" ref="myVueDropzone"
+                                @vdropzone-success="UploadSuccess"
+                                thumbnailHeight="80"
+                                thumbnailWidth="80"
+                                :options="dropOptions">
+                  </vue-dropzone>
+                </div>
+              </template>
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn color="blue darken-1" flat @click="close">Cancel</v-btn>
+                <v-btn color="blue darken-1" flat @click="save">Save</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+        </v-toolbar>
+        <v-data-table
+            :headers="headers"
+            :items="items"
+            :expand="expand"
+            :loading="loadingMain"
+            :rows-per-page-items="rowsPerPage"
+            class="crud"
+        >
+          <v-progress-linear v-slot:progress color="blue" indeterminate></v-progress-linear>
+          <template slot="items" slot-scope="props">
+            <tr @click="expendItem(props)">
+              <td>{{ props.item.id }}</td>
+              <td class="text-xs-left">{{ props.item.serial }}</td>
+              <td class="text-xs-left factory-cell">{{ props.item.factory }}</td>
+              <td class="text-xs-left">{{ props.item.date }}</td>
+              <td class="text-xs-left">{{ props.item.batch }}</td>
+              <td class="text-xs-left">{{ props.item.carrier }}</td>
+              <td class="text-xs-left">{{ props.item.cold_van }}</td>
+              <td class="text-xs-left">{{ props.item.distributor }}</td>
+              <td class="text-xs-left">{{ props.item.hospital }}</td>
+              <td class="text-xs-left patient-cell">{{ props.item.patient }}</td>
+              <td class="justify-center px-0">
+                <span v-if="props.item.attach_uri"><v-icon color="#bbb" small>attach_file</v-icon></span>
+              </td>
+              <td class="justify-center layout px-0">
+                <v-icon
+                    small
+                    class="mr-1"
+                    @click="editItem(props.item)"
+                >
+                  edit
+                </v-icon>
+                <v-icon
+                    small
+                    class="mr-3"
+                    @click="deleteItem(props.item)"
+                >
+                  delete
+                </v-icon>
+              </td>
+            </tr>
+          </template>
+          <template v-slot:expand="props" v-slot:no-data>
+            <v-layout row>
+              <v-flex xs12 sm6 md9 offset-sm1>
+                <v-list
+                    :loading="false"
+                    dense
+                    two-line
+                >
+                  <template v-for="(item, index) in expandItems">
+                    <v-list-tile
+                        :key="item.id"
+                        avatar
+                        ripple
+                        @click="goExplorer(item.hash)"
+                    >
+                      <v-list-tile-content>
+                        <v-icon small>verified_user</v-icon>
+                        <v-list-tile-title>
+                          <div>
+                            <prism language="sql" :code="item.sql"></prism>
+                          </div>
+                        </v-list-tile-title>
 
-                          <v-list-tile-sub-title>
-                            <v-icon small>fingerprint</v-icon>
-                            {{ item.hash }}
-                          </v-list-tile-sub-title>
-                        </v-list-tile-content>
+                        <v-list-tile-sub-title>
+                          <v-icon small>fingerprint</v-icon>
+                          {{ item.hash }}
+                        </v-list-tile-sub-title>
+                      </v-list-tile-content>
 
-                        <v-list-tile-action>
-                          <v-list-tile-action-text>{{ item.user }}</v-list-tile-action-text>
-                          <v-icon>
-                            storage
-                          </v-icon>
-                        </v-list-tile-action>
+                      <v-list-tile-action>
+                        <v-list-tile-action-text>{{ item.user }}</v-list-tile-action-text>
+                        <v-icon>
+                          storage
+                        </v-icon>
+                      </v-list-tile-action>
 
-                      </v-list-tile>
-                      <v-divider
-                          v-if="index + 1 < items.length"
-                          :key="index"
-                      ></v-divider>
-                    </template>
-                  </v-list>
-                </v-flex>
-              </v-layout>
-            </template>
-            <template v-slot:no-data>
-              <v-btn color="primary" @click="initialize">Reload</v-btn>
-            </template>
-          </v-data-table>
-        </div>
-      </v-app>
+                    </v-list-tile>
+                    <v-divider
+                        v-if="index + 1 < items.length"
+                        :key="index"
+                    ></v-divider>
+                  </template>
+                </v-list>
+              </v-flex>
+            </v-layout>
+          </template>
+          <template v-slot:no-data>
+            <v-btn color="primary" @click="initialize">Reload</v-btn>
+          </template>
+        </v-data-table>
+      </div>
     </div>
   </v-container>
 </template>
@@ -220,6 +227,7 @@
   import Prism from 'vue-prism-component'
   import 'prismjs/components/prism-sql'
   import e2e from 'e2e_js'
+  import archChart from './Arch'
 
   const aes = require('aes-js');
 
@@ -292,7 +300,8 @@
 
     components: {
       vueDropzone: vueDropZone,
-      Prism
+      Prism,
+      'archChart': archChart,
     },
 
     computed: {
@@ -319,6 +328,9 @@
     },
 
     methods: {
+      animateCQL(cql) {
+        this.$refs.archchart.load(cql)
+      },
       to_hex(d) {
         return aes.utils.hex.fromBytes(d);
       },
@@ -429,7 +441,8 @@
         confirm('Are you sure you want to delete this item?') &&
         axios.delete('/apiv1/cargo/' + id)
           .then(resp => {
-            this.$log.debug(resp)
+            this.$log.debug(resp);
+            this.animateCQL(resp.data.cql);
             this.items.splice(index, 1);
           })
           .catch(err => {
@@ -484,6 +497,7 @@
             axios.put('/apiv1/cargo', diff)
               .then(resp => {
                 this.$log.debug(resp);
+                this.animateCQL(resp.data.cql);
                 this.initialize();
                 // Object.assign(this.items[this.editedIndex], this.editedItem);
                 this.$refs.myVueDropzone.removeAllFiles();
@@ -513,11 +527,12 @@
             }
           }
           if (Object.keys(insert).length > 0) {
-            this.$log.debug(insert)
+            this.$log.debug(insert);
             axios.post('/apiv1/cargo', insert)
               .then(resp => {
-                this.$log.debug(resp)
-                this.items.push(this.editedItem)
+                this.$log.debug(resp);
+                this.animateCQL(resp.data.cql);
+                this.items.push(this.editedItem);
                 this.initialize();
               })
               .catch(err => {

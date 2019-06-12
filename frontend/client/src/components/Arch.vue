@@ -1,12 +1,6 @@
 <template>
-  <div class="container">
-    <div id="arch">
-      <div class="container">
-        <div id="chart">
-        </div>
-        <v-btn color="primary" @click="load">load</v-btn>
-      </div>
-    </div>
+  <div id="arch">
+    <div id="chart"></div>
   </div>
 </template>
 
@@ -20,33 +14,26 @@
       }
     },
     mounted() {
-
     },
     methods: {
-      load: function () {
+      load: function (cql) {
         if (this.frame_num === 0) {
           window.archPlayer.frame(this.frame_num, "Log Replication" + this.frame_num, this.initFrame());
-        } else {
-          // window.archPlayer.current().model().clients.create("Y" + this.frame_num);
-          // window.archPlayer.frame(this.frame_num, "Log Replication" + this.frame_num, this.newFrame());
-          window.archPlayer.next()
-          this.newFrame()(window.archPlayer.current())
         }
+        // window.archPlayer.current().model().clients.create("Y" + this.frame_num);
+        // window.archPlayer.frame(this.frame_num, "Log Replication" + this.frame_num, this.newFrame());
+        window.archPlayer.next()
+        this.newFrame(cql)(window.archPlayer.current())
         this.frame_num += 1;
       },
       initFrame: function () {
         return function (fr) {
           this.currentFrame = fr;
-          var player = fr.player(),
+          var
+            player = fr.player(),
             layout = fr.layout(),
             model = function () {
               return fr.model();
-            },
-            client = function (id) {
-              return fr.model().clients.find(id);
-            },
-            node = function (id) {
-              return fr.model().nodes.find(id);
             },
             cluster = function (value) {
               model().nodes.toArray().forEach(function (node) {
@@ -54,9 +41,10 @@
               });
             };
 
-          fr.after(0, function () {
-            model().clear();
-          })
+          fr
+            .after(0, function () {
+              model().clear();
+            })
             .after(0, function () {
               fr.model().title = '<h2 style="visibility:visible">Log Replication</h1>'
                 + '<br/>' + fr.model().controls.html();
@@ -80,64 +68,56 @@
               model().forceImmediateLeader();
             })
 
-
-            //------------------------------
-            // Single Entry Replication
-            //------------------------------
-            .after(300, function () {
-            })
-            .after(500, function () {
-              client("X").send(model().leader(), "SET 5");
-            })
-            .after(model().defaultNetworkLatency, function () {
-            })
-            .at(model(), "appendEntriesRequestsSent", function () {
-            })
-            .after(model().defaultNetworkLatency * 0.25, function () {
-            })
-            .at(model(), "commitIndexChange", function (event) {
-            })
-            .after(model().defaultNetworkLatency * 0.25, function () {
-            })
-            .after(model().defaultNetworkLatency, function () {
-              client("X").send(model().leader(), "ADD 2");
-            })
-            .at(model(), "recv", function () {
-            })
-
+          //------------------------------
+          // Single Entry Replication
+          //------------------------------
+          // .after(300, function () {
+          //   client("X").send(model().leader(), "select * from cargos where id = 5");
+          // })
+          // .at(model(), "appendEntriesRequestsSent", function () {
+          // })
+          // .at(model(), "commitIndexChange", function (event) {
+          //   if (event.target !== model().leader()) {
+          //     subtitle('<h2>commitIndexChange</h2>');
+          //   }
+          // });
+          // .after(model().defaultNetworkLatency * 2, function (event) {
+          //   subtitle('<h2>finish</h2>');
+          // })
 
           player.play();
         }
       },
-      newFrame: function () {
+      newFrame: function (cql) {
         return function (fr) {
-          var player = fr.player(),
+          const player = fr.player(),
+            layout = fr.layout(),
             model = function () {
               return fr.model();
             },
             client = function (id) {
               return fr.model().clients.find(id);
-            }
+            },
+            subtitle = function (s, pause) {
+              model().subtitle = s + model().controls.html();
+              layout.invalidate();
+              if (pause === undefined) {
+                model().controls.show()
+              }
+            };
 
           fr.after(500, function () {
-            client("X").send(model().leader(), "SET 5");
+            subtitle('<h2>' + cql +'</h2>', false);
+            client("X").send(model().leader(), cql);
           })
-            .after(model().defaultNetworkLatency, function () {
-            })
-            .at(model(), "appendEntriesRequestsSent", function () {
-            })
-            .after(model().defaultNetworkLatency * 0.25, function () {
-            })
-            .at(model(), "commitIndexChange", function (event) {
-            })
-            .after(model().defaultNetworkLatency * 0.25, function () {
-            })
-            .after(model().defaultNetworkLatency, function () {
-              client("X").send(model().leader(), "ADD 2");
-            })
-            .at(model(), "recv", function () {
-            })
-
+          .at(model(), "appendEntriesRequestsSent", function () {
+          })
+          .at(model(), "commitIndexChange", function (event) {
+            return (event.target !== model().leader())
+          })
+          .after(model().defaultNetworkLatency * 2, function () {
+            subtitle('<h2>Committed</h2>');
+          })
 
           player.play();
         }
@@ -151,8 +131,16 @@
     shape-rendering: crispEdges
   }
 
-  nav {
-    z-index: 1000;
+  #chart {
+    min-height: 500px;
+    height: 500px;
+  }
+
+  .log-entry {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 10em;
   }
 
   .navbar-header {
