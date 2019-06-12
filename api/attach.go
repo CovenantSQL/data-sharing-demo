@@ -28,7 +28,7 @@ func Upload(c echo.Context) (err error) {
 		logrus.Error("Upload: no token got")
 		return c.JSON(http.StatusBadRequest, "no token got")
 	} else {
-		db := getDB(token)
+		db, _ := getDB(token)
 		if db == nil {
 			return c.JSON(http.StatusForbidden, "invalid token")
 		}

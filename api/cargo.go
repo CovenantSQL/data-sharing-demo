@@ -46,13 +46,14 @@ const (
 	`
 )
 
-func getDB(token string) *sql.DB {
+func getDB(token string) (*sql.DB, error) {
 	dbIns, ok := dbMap.Load(token)
 	if !ok {
-		logrus.Errorf("getDB: failed for %s", token)
-		return nil
+		err := fmt.Errorf("getDB: failed for %s", token)
+		logrus.Error(err)
+		return nil, err
 	}
-	return dbIns.(*sql.DB)
+	return dbIns.(*sql.DB), nil
 }
 
 func getUser(token string) (user string) {
@@ -94,7 +95,7 @@ func getCargos(token string) (result []Cargo) {
 	}
 
 	user = getUser(token)
-	db := getDB(token)
+	db, err := getDB(token)
 	if db == nil {
 		return
 	}
@@ -145,10 +146,9 @@ func getCargos(token string) (result []Cargo) {
 	return
 }
 
-func postCargo(c echo.Context, token string) (id int64, err error) {
+func postCargo(c echo.Context, token string) (sql string, id int64, err error) {
 	var (
 		cargo Cargo
-		sql   string
 		sets  string
 		args  []interface{}
 	)
@@ -219,7 +219,7 @@ func postCargo(c echo.Context, token string) (id int64, err error) {
 
 	sql = fmt.Sprintf("INSERT INTO cargos(%s) VALUES(%s)", sets, placeHolders)
 
-	db := getDB(token)
+	db, err := getDB(token)
 	if db == nil {
 		return
 	}
@@ -240,13 +240,12 @@ func postCargo(c echo.Context, token string) (id int64, err error) {
 	cId, err := result.LastInsertId()
 	_ = putCargoSql(cId, sql, getUser(token), db)
 
-	return cId, err
+	return sql, cId, err
 }
 
-func putCargo(c echo.Context, token string) (id int64, err error) {
+func putCargo(c echo.Context, token string) (sql string, id int64, err error) {
 	var (
 		cargo Cargo
-		sql   string
 		sets  string
 		args  []interface{}
 	)
@@ -317,7 +316,7 @@ func putCargo(c echo.Context, token string) (id int64, err error) {
 
 	sql = fmt.Sprintf("UPDATE cargos SET %s WHERE id = %d", sets, *cargo.Id)
 
-	db := getDB(token)
+	db, err := getDB(token)
 	if db == nil {
 		return
 	}
@@ -341,16 +340,16 @@ func putCargo(c echo.Context, token string) (id int64, err error) {
 	return
 }
 
-func deleteCargo(c echo.Context, token string) (id int64, err error) {
+func deleteCargo(c echo.Context, token string) (sql string, id int64, err error) {
 	id = -1
-	db := getDB(token)
+	db, err := getDB(token)
 	if db == nil {
 		return
 	}
 
 	id, _ = strconv.ParseInt(c.Param("id"), 10, 64)
 
-	sql := "DELETE FROM cargos WHERE id = ?"
+	sql = "DELETE FROM cargos WHERE id = ?"
 
 	stmt, err := db.Prepare(sql)
 	if err != nil {
@@ -367,5 +366,6 @@ func deleteCargo(c echo.Context, token string) (id int64, err error) {
 	}
 
 	_ = putCargoSql(id, sql, getUser(token), db)
-	return result.RowsAffected()
+	id, err = result.RowsAffected()
+	return sql, id, err
 }

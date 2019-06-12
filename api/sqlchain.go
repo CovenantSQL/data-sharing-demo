@@ -31,7 +31,7 @@ const (
 
 func getCargoSql(c echo.Context, token string) (result []SqlRecord) {
 
-	db := getDB(token)
+	db, err := getDB(token)
 	if db == nil {
 		return
 	}

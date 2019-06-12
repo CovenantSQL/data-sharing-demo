@@ -115,9 +115,10 @@ func PutCargo() echo.HandlerFunc {
 			logrus.Error("PutCargos: no token got")
 			return c.JSON(http.StatusBadRequest, nil)
 		} else {
-			if id, err := putCargo(c, token); err == nil {
+			if sql, id, err := putCargo(c, token); err == nil {
 				return c.JSON(http.StatusOK, H{
 					"updated": id,
+					"cql":     sql,
 				})
 			} else {
 				return c.JSON(http.StatusForbidden, err)
@@ -133,9 +134,10 @@ func PostCargo() echo.HandlerFunc {
 			logrus.Error("PutCargos: no token got")
 			return c.JSON(http.StatusBadRequest, nil)
 		} else {
-			if id, err := postCargo(c, token); err == nil {
+			if sql, id, err := postCargo(c, token); err == nil {
 				return c.JSON(http.StatusCreated, H{
 					"created": id,
+					"cql":     sql,
 				})
 			} else {
 				return c.JSON(http.StatusForbidden, err)
@@ -151,9 +153,10 @@ func DeleteCargo() echo.HandlerFunc {
 			logrus.Error("deleteCargo: no token got")
 			return c.JSON(http.StatusBadRequest, nil)
 		} else {
-			if id, err := deleteCargo(c, token); err == nil {
+			if sql, id, err := deleteCargo(c, token); err == nil {
 				return c.JSON(http.StatusOK, H{
 					"deleted": id,
+					"cql":     sql,
 				})
 			} else {
 				return c.JSON(http.StatusForbidden, err)
