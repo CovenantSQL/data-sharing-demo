@@ -236,7 +236,7 @@
     data: () => ({
       e2eePass: '',
       dropOptions: {
-        url: "/apiv1/attach",
+        url: axios.defaults.baseURL + "/apiv1/attach",
         maxFilesize: 20, // MB
         maxFiles: 1,
         chunking: false,
@@ -340,7 +340,7 @@
       },
       UploadZoneMount() {
         let file = {size: 0, name: this.editedItem.attach_uri};
-        let url = "/apiv1/attach/" + this.editedItem.attach_uri;
+        let url = axios.defaults.baseURL + "/apiv1/attach/" + this.editedItem.attach_uri;
         this.$log.debug(file, url)
         this.$refs.myVueDropzone.manuallyAddFile(file, url)
         this.isMounted = true;
