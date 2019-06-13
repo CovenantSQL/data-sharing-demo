@@ -62,6 +62,9 @@ func main() {
 			<h3>TLS certificates automatically installed from Let's Encrypt :)</h3>
 		`)
 		})
-		e.StartAutoTLS(":7790")
+		e.StartTLS(":7790",
+			"./cert/gridb.io/gridb.io.cer",
+			"./cert/gridb.io/gridb.io.key",
+		)
 	}
 }
