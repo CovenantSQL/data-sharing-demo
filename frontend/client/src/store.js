@@ -3,7 +3,6 @@ import Vuex from 'vuex'
 import axios from 'axios'
 
 Vue.use(Vuex)
-axios.defaults.baseURL = process.env.BACKEND_URI;
 
 export default new Vuex.Store({
   state: {

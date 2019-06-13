@@ -9,7 +9,7 @@ import Arch from "./components/Arch";
 Vue.use(Router)
 
 let router = new Router({
-  mode: 'history',
+  mode: 'hash',
   routes: [
     {
       path: '/',
@@ -35,7 +35,7 @@ let router = new Router({
       component: About
     }
   ]
-})
+});
 
 router.beforeEach((to, from, next) => {
   if (to.matched.some(record => record.meta.requiresAuth)) {

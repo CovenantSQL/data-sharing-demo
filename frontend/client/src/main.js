@@ -1,5 +1,5 @@
 import Vue from 'vue'
-import Axios from './plugins/axios'
+import Axios from 'axios'
 import './plugins/vuetify'
 import App from './App.vue'
 import router from './router'
@@ -9,6 +9,10 @@ import Notifications from 'vue-notification'
 import 'vue2-dropzone/dist/vue2Dropzone.min.css'
 
 const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction) {
+  Axios.defaults.baseURL = '//api.gridb.io:7790';
+}
 
 const options = {
   isEnabled: true,
