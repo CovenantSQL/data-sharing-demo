@@ -228,6 +228,7 @@
   import 'prismjs/components/prism-sql'
   import e2e from 'e2e_js'
   import archChart from './Arch'
+  import Vue from 'vue'
 
   const aes = require('aes-js');
 
@@ -402,7 +403,7 @@
           });
       },
       goExplorer(hash) {
-        const explorer = 'http://localhost:8082/dbs/' +
+        const explorer = Vue.prototype.$explorerBASE +
           'b77422b30688fdc8facfe84a0c48c1f94aca3444178a9502753b3692a5576f10/requests/';
         window.open(explorer + hash, "_blank");
       },

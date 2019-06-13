@@ -27,7 +27,7 @@ type authResp struct {
 
 const (
 	salt = "9e1618775ccdeeb19f110e04fbc6c5bc"
-	db   = "b77422b30688fdc8facfe84a0c48c1f94aca3444178a9502753b3692a5576f10"
+	db   = "966c4a297ff996772ef1b7f7ba13f1a1fab95bb4589f9e2236d37cbc83ac38bd"
 	host = "127.0.0.1:4665"
 )
 
