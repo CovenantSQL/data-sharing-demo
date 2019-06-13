@@ -2,7 +2,6 @@ package main
 
 import (
 	"math/rand"
-	"net/url"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -16,22 +15,22 @@ func main() {
 	logrus.SetLevel(logrus.DebugLevel)
 	rand.Seed(time.Now().UnixNano())
 
-	// debug proxy
-	url1, err := url.Parse("http://localhost:8080")
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	targets := []*middleware.ProxyTarget{
-		{
-			URL: url1,
-		},
-	}
 	e := echo.New()
 
-	g := e.Group("/")
-	g.Use(middleware.Proxy(middleware.NewRoundRobinBalancer(targets)))
+	//// debug proxy
+	//url1, err := url.Parse("http://localhost:5000")
+	//if err != nil {
+	//	logrus.Fatal(err)
+	//}
+	//targets := []*middleware.ProxyTarget{
+	//	{
+	//		URL: url1,
+	//	},
+	//}
+	//g := e.Group("/")
+	//g.Use(middleware.Proxy(middleware.NewRoundRobinBalancer(targets)))
 	e.Use(middleware.CORS())
-	//e.Static("/", "frontend")
+	e.Static("/", "frontend/client/dist")
 	e.POST("/apiv1/login", api.Login())
 	e.POST("/apiv1/logout", api.Logout())
 	e.GET("/apiv1/cargo", api.GetCargos())
