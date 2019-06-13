@@ -12,7 +12,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 if (isProduction) {
   Axios.defaults.baseURL = '//api.gridb.io:7790';
-  Vue.prototype.$explorerBASE = 'http://demo-expl.gridb.io:8083/dbs/';
+  Vue.prototype.$explorerBASE = 'http://demo-explorer.gridb.io:8083/dbs/';
 } else {
   Vue.prototype.$explorerBASE = 'http://localhost:8082/dbs/';
 }

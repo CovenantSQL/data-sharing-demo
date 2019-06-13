@@ -404,7 +404,7 @@
       },
       goExplorer(hash) {
         const explorer = Vue.prototype.$explorerBASE +
-          'b77422b30688fdc8facfe84a0c48c1f94aca3444178a9502753b3692a5576f10/requests/';
+          '966c4a297ff996772ef1b7f7ba13f1a1fab95bb4589f9e2236d37cbc83ac38bd/requests/';
         window.open(explorer + hash, "_blank");
       },
       editItem(item) {
