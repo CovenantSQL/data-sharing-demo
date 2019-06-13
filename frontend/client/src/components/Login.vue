@@ -38,7 +38,7 @@
         let password = this.password;
         this.$store.dispatch('login', {user, password})
           .then(
-            () => this.$router.push({path: '/'})
+            () => this.$router.push({name: 'home'})
           )
           .catch(err => {
             this.$notify({

@@ -18,6 +18,16 @@
     methods: {
       load: function (cql) {
         if (this.frame_num === 0) {
+          window.archPlayer.layout(new window.Layout("#chart"));
+          window.archPlayer.model(new window.Model());
+          window.archPlayer.resizeable(true);
+
+          window.archPlayer.addEventListener("tick", function () {
+            window.archPlayer.current().model().tick(window.archPlayer.current().playhead());
+            window.archPlayer.layout().messages.invalidate();
+            window.archPlayer.layout().nodes.invalidateElectionTimers();
+          });
+
           window.archPlayer.frame(this.frame_num, "Log Replication" + this.frame_num, this.initFrame());
         }
         // window.archPlayer.current().model().clients.create("Y" + this.frame_num);

@@ -1,9 +1,9 @@
 <template>
   <v-app>
     <div id="nav">
-      <router-link to="/">Home</router-link>
+      <router-link to="{name: 'home'}">Home</router-link>
       |
-      <router-link to="/about">About</router-link>
+      <router-link to="{name: 'about'}">About</router-link>
       <span v-if="isLoggedIn"> | <a @click="logout">Logout {{ user }}</a></span>
     </div>
     <notifications group="login" position="bottom right"/>
@@ -14,9 +14,9 @@
 
 <script>
   export default {
-    data(){
+    data() {
       return {
-        user : "",
+        user: "",
       }
     },
 
@@ -40,7 +40,7 @@
         this.user = "";
         this.$store.dispatch('logout')
           .then(() => {
-            this.$router.push('/login')
+            this.$router.push({name: 'login'})
           })
       }
     },
